@@ -279,6 +279,59 @@
             font-size: 2em;
             font-weight: bold;
         }
+        
+        .lock-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            transition: transform 0.2s;
+        }
+        
+        .lock-btn:hover {
+            transform: scale(1.2);
+        }
+        
+        .cell-lock-btn {
+            position: absolute;
+            right: 2px;
+            top: 2px;
+            background: none;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 0;
+            width: 18px;
+            height: 18px;
+            opacity: 0.4;
+            transition: all 0.2s;
+            line-height: 18px;
+        }
+        
+        td:hover .cell-lock-btn {
+            opacity: 1;
+        }
+        
+        .cell-lock-btn:hover {
+            opacity: 1 !important;
+            font-size: 14px;
+        }
+        
+        .locked-cell {
+            background: #ffe6e6 !important;
+            border: 2px solid #ff9999 !important;
+        }
+        
+        .auto-cell {
+            background: #fff8dc !important;
+        }
+        
+        .manual-cell {
+            background: white !important;
+        }
     </style>
 </head>
 <body>
@@ -299,27 +352,137 @@
         <!-- Tab 1: 母公司稀释 -->
         <div class="tab-content active">
             <div class="form-section">
-                <h3>母公司股权稀释分析</h3>
-                <div class="form-group">
-                    <label>初始估值 (万元)</label>
-                    <input type="number" id="parent_pre_money" value="2000" step="100">
+                <h3>母公司股权稀释分析 - 实时计算表格</h3>
+                <p style="color: #666; margin-bottom: 20px;">
+                    修改任何单元格，其他值将自动计算。可以输入投前估值、投资额、投后估值或股权比例中的任何值。
+                </p>
+                
+                <div style="margin-bottom: 15px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <div>
+                        <label style="font-weight: 600; margin-right: 10px;">计算模式：</label>
+                        <select id="parent_calc_mode" onchange="changeCalcMode()" style="padding: 8px; border-radius: 5px; border: 2px solid #667eea;">
+                            <option value="normal">标准模式（输入投前+投资额）</option>
+                            <option value="post">输入投后+投资额</option>
+                            <option value="equity">输入投资额+股权比例</option>
+                            <option value="flexible">灵活模式（任意输入）</option>
+                        </select>
                 </div>
-                <div class="form-group">
-                    <label>融资轮次</label>
-                    <div id="parent-rounds">
-                        <div class="round-item">
-                            <input type="text" placeholder="轮次名称" value="Seed">
-                            <input type="number" placeholder="投资额(万元)" value="500" step="100">
+                    <div>
+                        <label style="font-weight: 600; margin-right: 10px;">快速模板：</label>
+                        <select id="template_select" onchange="loadTemplate()" style="padding: 8px; border-radius: 5px; border: 2px solid #28a745;">
+                            <option value="">选择模板...</option>
+                            <option value="seed">种子轮（Seed）- 简单场景</option>
+                            <option value="seed_a">种子轮 + A轮</option>
+                            <option value="full_abc">完整融资（A+B+C轮）</option>
+                            <option value="prea_a_b">Pre-A + A轮 + B轮</option>
+                            <option value="big_rounds">大额融资场景</option>
+                            <option value="custom">自定义（清空表格）</option>
+                        </select>
                         </div>
-                        <div class="round-item">
-                            <input type="text" placeholder="轮次名称" value="A">
-                            <input type="number" placeholder="投资额(万元)" value="1500" step="100">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <label style="font-weight: 600;">输入模式：</label>
+                        <select id="input_mode" onchange="changeInputMode()" style="padding: 8px; border-radius: 5px; border: 2px solid #667eea;">
+                            <option value="manual">手动输入模式（自由设置所有值）</option>
+                            <option value="auto">自动计算模式（输入后自动计算）</option>
+                        </select>
                         </div>
                     </div>
-                    <button class="btn btn-primary" onclick="addRound('parent')">+ 添加轮次</button>
+                
+                <div style="overflow-x: auto;">
+                    <table id="parent-dilution-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #667eea; color: white;">
+                                <th style="padding: 12px; border: 1px solid #ddd;">轮次</th>
+                                <th style="padding: 12px; border: 1px solid #ddd;">
+                                    投前估值(万元)
+                                    <small id="pre-money-label" style="display: block; font-size: 0.75em; opacity: 0.8;">可编辑</small>
+                                </th>
+                                <th style="padding: 12px; border: 1px solid #ddd;">
+                                    投资额(万元)
+                                    <small id="investment-label" style="display: block; font-size: 0.75em; opacity: 0.8;">可编辑</small>
+                                </th>
+                                <th style="padding: 12px; border: 1px solid #ddd;">
+                                    投后估值(万元)
+                                    <small id="post-money-label" style="display: block; font-size: 0.75em; opacity: 0.8;">可编辑</small>
+                                </th>
+                                <th style="padding: 12px; border: 1px solid #ddd;">
+                                    新投资者股权%
+                                    <small id="investor-pct-label" style="display: block; font-size: 0.75em; opacity: 0.8;">可编辑</small>
+                                </th>
+                                <th style="padding: 12px; border: 1px solid #ddd;">
+                                    创始人持股%
+                                    <small id="founder-pct-label" style="display: block; font-size: 0.75em; opacity: 0.8;">自动</small>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="parent-dilution-tbody">
+                            <!-- 行1: Seed轮 -->
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd;"><input type="text" value="Seed" style="width: 100%; border: none; padding: 4px;"></td>
+                                <td style="padding: 4px; border: 1px solid #ddd; position: relative;">
+                                    <input type="number" value="2000" class="pre-money" data-row="0" data-field="pre-money" style="width: 100%; border: none; padding: 4px; background: white;">
+                                    <button onclick="toggleSingleCellLock(this)" class="cell-lock-btn" title="锁定/解锁">🔓</button>
+                                </td>
+                                <td style="padding: 4px; border: 1px solid #ddd; position: relative;">
+                                    <input type="number" value="500" class="investment" data-row="0" data-field="investment" style="width: 100%; border: none; padding: 4px; background: white;">
+                                    <button onclick="toggleSingleCellLock(this)" class="cell-lock-btn" title="锁定/解锁">🔓</button>
+                                </td>
+                                <td style="padding: 4px; border: 1px solid #ddd; position: relative;">
+                                    <input type="number" value="2500" class="post-money" data-row="0" data-field="post-money" style="width: 100%; border: none; padding: 4px; background: #fff8dc;">
+                                    <button onclick="toggleSingleCellLock(this)" class="cell-lock-btn" title="锁定/解锁">🔓</button>
+                                </td>
+                                <td style="padding: 4px; border: 1px solid #ddd; position: relative;">
+                                    <input type="number" value="20" class="investor-pct" data-row="0" data-field="investor-pct" style="width: 100%; border: none; padding: 4px; background: #fff8dc;">
+                                    <button onclick="toggleSingleCellLock(this)" class="cell-lock-btn" title="锁定/解锁">🔓</button>
+                                </td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">
+                                    <input type="number" value="80" class="founder-pct" data-row="0" readonly style="width: 100%; border: none; padding: 4px; background: #f0f0f0;">
+                                </td>
+                            </tr>
+                            <!-- 行2: A轮 -->
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd;"><input type="text" value="A" style="width: 100%; border: none; padding: 4px;"></td>
+                                <td style="padding: 4px; border: 1px solid #ddd; position: relative;">
+                                    <input type="number" value="2500" class="pre-money" data-row="1" data-field="pre-money" style="width: 100%; border: none; padding: 4px; background: white;">
+                                    <button onclick="toggleSingleCellLock(this)" class="cell-lock-btn" title="锁定/解锁">🔓</button>
+                                </td>
+                                <td style="padding: 4px; border: 1px solid #ddd; position: relative;">
+                                    <input type="number" value="1500" class="investment" data-row="1" data-field="investment" style="width: 100%; border: none; padding: 4px; background: white;">
+                                    <button onclick="toggleSingleCellLock(this)" class="cell-lock-btn" title="锁定/解锁">🔓</button>
+                                </td>
+                                <td style="padding: 4px; border: 1px solid #ddd; position: relative;">
+                                    <input type="number" value="4000" class="post-money" data-row="1" data-field="post-money" style="width: 100%; border: none; padding: 4px; background: #fff8dc;">
+                                    <button onclick="toggleSingleCellLock(this)" class="cell-lock-btn" title="锁定/解锁">🔓</button>
+                                </td>
+                                <td style="padding: 4px; border: 1px solid #ddd; position: relative;">
+                                    <input type="number" value="37.5" class="investor-pct" data-row="1" data-field="investor-pct" style="width: 100%; border: none; padding: 4px; background: #fff8dc;">
+                                    <button onclick="toggleSingleCellLock(this)" class="cell-lock-btn" title="锁定/解锁">🔓</button>
+                                </td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">
+                                    <input type="number" value="50" class="founder-pct" data-row="1" readonly style="width: 100%; border: none; padding: 4px; background: #f0f0f0;">
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <button class="btn btn-primary" onclick="addParentRow()">+ 添加轮次</button>
+                    <button class="btn btn-success" onclick="recalculateAllRows()" style="margin-left: 10px;">🔄 重新计算</button>
+                    <button class="btn" onclick="fillFromPrevousRow()" style="margin-left: 10px; background: #f0f0f0; color: #333;">📋 从上一行填充</button>
+            </div>
+                
+                <div style="margin-top: 15px; padding: 10px; background: #e9ecef; border-radius: 5px;">
+                    <strong>💡 使用说明：</strong>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        <li><strong>单元格锁定</strong>：每个单元格右上角有个🔓图标，点击可锁定该单元格（变🔒和红色背景）</li>
+                        <li><strong>锁定状态</strong>：红色背景=已锁定，不会被计算；黄色背景=自动计算字段；白色=手动输入</li>
+                        <li>点击<strong>"重新计算"</strong>按钮统一计算所有<strong>未锁定</strong>的单元格</li>
+                        <li>点击<strong>"从上一行填充"</strong>可批量填充投前估值</li>
+                        <li>创始人持股自动按累积稀释计算：上一轮后持股 × (1 - 本轮新投资者股权%)</li>
+                    </ul>
                 </div>
             </div>
-            <button class="btn btn-success" onclick="analyzeParent()">分析</button>
             <div id="parent-results" class="results"></div>
         </div>
         
@@ -566,6 +729,231 @@
             roundsDiv.appendChild(newRound);
         };
 
+        // 加载模板
+        window.loadTemplate = function() {
+            const template = document.getElementById('template_select').value;
+            if (!template || template === 'custom') {
+                if (template === 'custom') {
+                    // 清空表格，只保留一行
+                    const tbody = document.getElementById('parent-dilution-tbody');
+                    const firstRow = tbody.querySelector('tr');
+                    if (firstRow) {
+                        tbody.innerHTML = '';
+                        tbody.appendChild(firstRow.cloneNode(true));
+                        // 重置第一行数据
+                        const inputs = tbody.querySelectorAll('tr input');
+                        if (inputs.length >= 5) {
+                            inputs[0].value = 'Round1'; // 轮次
+                            inputs[1].value = '0';      // 投前
+                            inputs[2].value = '0';      // 投资额
+                            inputs[3].value = '0';      // 投后
+                            inputs[4].value = '0';      // 新投资者股权%
+                            inputs[5].value = '100';   // 创始人持股%
+                        }
+                    }
+                    changeCalcMode();
+                }
+                return;
+            }
+            
+            const templates = {
+                'seed': [
+                    { round: 'Seed', pre: 1000, invest: 200, post: 1200, invPct: 16.67, founderPct: 83.33 }
+                ],
+                'seed_a': [
+                    { round: 'Seed', pre: 1500, invest: 500, post: 2000, invPct: 25, founderPct: 75 },
+                    { round: 'A', pre: 2000, invest: 1000, post: 3000, invPct: 33.33, founderPct: 50 }
+                ],
+                'full_abc': [
+                    { round: 'A轮', pre: 2000, invest: 800, post: 2800, invPct: 28.57, founderPct: 71.43 },
+                    { round: 'B轮', pre: 2800, invest: 2000, post: 4800, invPct: 41.67, founderPct: 41.67 },
+                    { round: 'C轮', pre: 4800, invest: 5000, post: 9800, invPct: 51.02, founderPct: 20.41 }
+                ],
+                'prea_a_b': [
+                    { round: 'Pre-A', pre: 1000, invest: 300, post: 1300, invPct: 23.08, founderPct: 76.92 },
+                    { round: 'A轮', pre: 1300, invest: 700, post: 2000, invPct: 35, founderPct: 50.00 },
+                    { round: 'B轮', pre: 2000, invest: 2000, post: 4000, invPct: 50, founderPct: 25.00 }
+                ],
+                'big_rounds': [
+                    { round: 'A轮', pre: 5000, invest: 2000, post: 7000, invPct: 28.57, founderPct: 71.43 },
+                    { round: 'B轮', pre: 7000, invest: 5000, post: 12000, invPct: 41.67, founderPct: 41.67 },
+                    { round: 'C轮', pre: 12000, invest: 8000, post: 20000, invPct: 40, founderPct: 25.00 },
+                    { round: 'D轮', pre: 20000, invest: 15000, post: 35000, invPct: 42.86, founderPct: 14.29 }
+                ]
+            };
+            
+            const data = templates[template];
+            if (!data) return;
+            
+            // 清空现有数据和锁定状态
+            const tbody = document.getElementById('parent-dilution-tbody');
+            tbody.innerHTML = '';
+            lockedCells = {}; // 清空锁定状态
+            
+            // 添加模板数据
+            data.forEach((rowData, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="padding: 8px; border: 1px solid #ddd;"><input type="text" value="${rowData.round}" style="width: 100%; border: none; padding: 4px;"></td>
+                    <td style="padding: 4px; border: 1px solid #ddd; position: relative;">
+                        <input type="number" value="${rowData.pre}" class="pre-money" data-row="${index}" data-field="pre-money" style="width: 100%; border: none; padding: 4px; background: white;">
+                        <button onclick="toggleSingleCellLock(this)" class="cell-lock-btn" title="锁定/解锁">🔓</button>
+                    </td>
+                    <td style="padding: 4px; border: 1px solid #ddd; position: relative;">
+                        <input type="number" value="${rowData.invest}" class="investment" data-row="${index}" data-field="investment" style="width: 100%; border: none; padding: 4px; background: white;">
+                        <button onclick="toggleSingleCellLock(this)" class="cell-lock-btn" title="锁定/解锁">🔓</button>
+                    </td>
+                    <td style="padding: 4px; border: 1px solid #ddd; position: relative;">
+                        <input type="number" value="${rowData.post}" class="post-money" data-row="${index}" data-field="post-money" style="width: 100%; border: none; padding: 4px; background: #fff8dc;">
+                        <button onclick="toggleSingleCellLock(this)" class="cell-lock-btn" title="锁定/解锁">🔓</button>
+                    </td>
+                    <td style="padding: 4px; border: 1px solid #ddd; position: relative;">
+                        <input type="number" value="${rowData.invPct.toFixed(2)}" class="investor-pct" data-row="${index}" data-field="investor-pct" style="width: 100%; border: none; padding: 4px; background: #fff8dc;">
+                        <button onclick="toggleSingleCellLock(this)" class="cell-lock-btn" title="锁定/解锁">🔓</button>
+                    </td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">
+                        <input type="number" value="${rowData.founderPct.toFixed(2)}" class="founder-pct" data-row="${index}" readonly style="width: 100%; border: none; padding: 4px; background: #f0f0f0;">
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // 重新初始化事件监听
+            initParentDilutionTable();
+            
+            // 应用当前计算模式
+            changeCalcMode();
+            
+            // 重置模板选择器
+            document.getElementById('template_select').value = '';
+        };
+
+        // 切换计算模式
+        window.changeCalcMode = function() {
+            const mode = document.getElementById('parent_calc_mode').value;
+            const tbody = document.getElementById('parent-dilution-tbody');
+            if (!tbody) return;
+            
+            // 更新标签
+            if (mode === 'normal') {
+                // 标准模式：输入投前+投资额
+                document.getElementById('pre-money-label').textContent = '[输入]';
+                document.getElementById('investment-label').textContent = '[输入]';
+                document.getElementById('post-money-label').textContent = '[自动]';
+                document.getElementById('investor-pct-label').textContent = '[自动]';
+                document.getElementById('founder-pct-label').textContent = '[自动]';
+                
+                // 设置readonly
+                tbody.querySelectorAll('.pre-money').forEach(input => {
+                    input.readOnly = false;
+                    input.style.background = 'white';
+                });
+                tbody.querySelectorAll('.investment').forEach(input => {
+                    input.readOnly = false;
+                    input.style.background = 'white';
+                });
+                tbody.querySelectorAll('.post-money').forEach(input => {
+                    input.readOnly = true;
+                    input.style.background = '#f0f0f0';
+                });
+                tbody.querySelectorAll('.investor-pct').forEach(input => {
+                    input.readOnly = true;
+                    input.style.background = '#f0f0f0';
+                });
+                tbody.querySelectorAll('.founder-pct').forEach(input => {
+                    input.readOnly = true;
+                    input.style.background = '#f0f0f0';
+                });
+            } else if (mode === 'post') {
+                // 输入投后+投资额
+                document.getElementById('pre-money-label').textContent = '[自动]';
+                document.getElementById('investment-label').textContent = '[输入]';
+                document.getElementById('post-money-label').textContent = '[输入]';
+                document.getElementById('investor-pct-label').textContent = '[自动]';
+                document.getElementById('founder-pct-label').textContent = '[自动]';
+                
+                tbody.querySelectorAll('.pre-money').forEach(input => {
+                    input.readOnly = true;
+                    input.style.background = '#f0f0f0';
+                });
+                tbody.querySelectorAll('.investment').forEach(input => {
+                    input.readOnly = false;
+                    input.style.background = 'white';
+                });
+                tbody.querySelectorAll('.post-money').forEach(input => {
+                    input.readOnly = false;
+                    input.style.background = 'white';
+                });
+                tbody.querySelectorAll('.investor-pct').forEach(input => {
+                    input.readOnly = true;
+                    input.style.background = '#f0f0f0';
+                });
+                tbody.querySelectorAll('.founder-pct').forEach(input => {
+                    input.readOnly = true;
+                    input.style.background = '#f0f0f0';
+                });
+            } else if (mode === 'equity') {
+                // 输入投资额+股权比例
+                document.getElementById('pre-money-label').textContent = '[自动]';
+                document.getElementById('investment-label').textContent = '[输入]';
+                document.getElementById('post-money-label').textContent = '[自动]';
+                document.getElementById('investor-pct-label').textContent = '[输入]';
+                document.getElementById('founder-pct-label').textContent = '[自动]';
+                
+                tbody.querySelectorAll('.pre-money').forEach(input => {
+                    input.readOnly = true;
+                    input.style.background = '#f0f0f0';
+                });
+                tbody.querySelectorAll('.investment').forEach(input => {
+                    input.readOnly = false;
+                    input.style.background = 'white';
+                });
+                tbody.querySelectorAll('.post-money').forEach(input => {
+                    input.readOnly = true;
+                    input.style.background = '#f0f0f0';
+                });
+                tbody.querySelectorAll('.investor-pct').forEach(input => {
+                    input.readOnly = false;
+                    input.style.background = 'white';
+                });
+                tbody.querySelectorAll('.founder-pct').forEach(input => {
+                    input.readOnly = true;
+                    input.style.background = '#f0f0f0';
+                });
+            } else {
+                // 灵活模式：全部可编辑
+                document.getElementById('pre-money-label').textContent = '[输入]';
+                document.getElementById('investment-label').textContent = '[输入]';
+                document.getElementById('post-money-label').textContent = '[输入]';
+                document.getElementById('investor-pct-label').textContent = '[输入]';
+                document.getElementById('founder-pct-label').textContent = '[自动]';
+                
+                tbody.querySelectorAll('.pre-money').forEach(input => {
+                    input.readOnly = false;
+                    input.style.background = 'white';
+                });
+                tbody.querySelectorAll('.investment').forEach(input => {
+                    input.readOnly = false;
+                    input.style.background = 'white';
+                });
+                tbody.querySelectorAll('.post-money').forEach(input => {
+                    input.readOnly = false;
+                    input.style.background = 'white';
+                });
+                tbody.querySelectorAll('.investor-pct').forEach(input => {
+                    input.readOnly = false;
+                    input.style.background = 'white';
+                });
+                tbody.querySelectorAll('.founder-pct').forEach(input => {
+                    input.readOnly = true;
+                    input.style.background = '#f0f0f0';
+                });
+            }
+            
+            // 重新计算所有行
+            recalculateAllRows();
+        };
+
         // 添加合伙人
         window.addPartner = function(containerId) {
             const container = document.getElementById(containerId);
@@ -602,40 +990,10 @@
             document.getElementById('loading').classList.remove('active');
         }
 
-        // 母公司稀释分析
+        // 母公司稀释分析（新表格版本）
         window.analyzeParent = async function() {
-            showLoading();
-            
-            try {
-                const preMoney = parseFloat(document.getElementById('parent_pre_money').value);
-                const rounds = Array.from(document.querySelectorAll('#parent-rounds .round-item')).map(item => {
-                    const inputs = item.querySelectorAll('input');
-                    return {
-                        round: inputs[0].value || 'Round',
-                        amount: parseFloat(inputs[1].value)
-                    };
-                });
-                
-                const response = await fetch('/api/analyze', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        parent_dilution: { pre_money: preMoney, rounds: rounds }
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    displayParentResults(data.results.parent_dilution);
-                } else {
-                    alert('分析失败: ' + data.error);
-                }
-            } catch (error) {
-                alert('错误: ' + error.message);
-            } finally {
-                hideLoading();
-            }
+            // 兼容旧版本的调用，现在委托给新函数
+            return analyzeParentFromTable();
         }
 
         // 显示母公司结果
@@ -1224,9 +1582,308 @@
             }
         }
 
+        // 母公司稀释表格计算（手动触发模式）
+        let autoCalculateEnabled = false; // 默认关闭自动计算，只通过按钮触发
+
+        window.initParentDilutionTable = function() {
+            const tbody = document.getElementById('parent-dilution-tbody');
+            if (!tbody) return;
+            
+            // 初始化表格，但不添加自动计算监听器
+            // 用户需要点击"重新计算"按钮来触发计算
+            console.log('母公司稀释表格已初始化');
+        };
+
+        // 切换输入模式
+        window.changeInputMode = function() {
+            const mode = document.getElementById('input_mode').value;
+            
+            const tbody = document.getElementById('parent-dilution-tbody');
+            if (!tbody) return;
+            
+            // 所有模式下都允许编辑，只是是否自动计算的区别
+            tbody.querySelectorAll('input').forEach(input => {
+                if (input.classList.contains('founder-pct')) {
+                    // 创始人持股始终只读
+                    input.readOnly = true;
+                    input.style.background = '#f0f0f0';
+                    input.style.cursor = 'not-allowed';
+                } else {
+                    // 所有字段都可编辑
+                    input.readOnly = false;
+                    input.style.background = 'white';
+                    input.style.cursor = 'text';
+                }
+            });
+        };
+
+        // 从上一行填充
+        window.fillFromPrevousRow = function() {
+            const tbody = document.getElementById('parent-dilution-tbody');
+            if (!tbody) return;
+            
+            for (let i = 1; i < tbody.children.length; i++) {
+                // 跳过已锁定的行
+                if (isCellLocked(String(i), 'pre-money')) continue;
+                
+                const row = tbody.children[i];
+                const prevRow = tbody.children[i - 1];
+                const inputs = row.querySelectorAll('input');
+                const prevInputs = prevRow.querySelectorAll('input');
+                
+                // 如果投前为空，填充上一行的投后
+                if (!inputs[1].value || inputs[1].value === '0') {
+                    const prevPost = parseFloat(prevInputs[3].value) || 0;
+                    if (prevPost > 0) {
+                        inputs[1].value = prevPost;
+                    }
+                }
+            }
+        };
+
+        // 切换单个单元格锁定状态
+        window.toggleSingleCellLock = function(button) {
+            const td = button.parentElement;
+            const input = td.querySelector('input');
+            if (!input) return;
+            
+            const rowIndex = input.getAttribute('data-row');
+            const field = input.getAttribute('data-field');
+            
+            const key = `${rowIndex}_${field}`;
+            
+            if (input.hasAttribute('data-locked')) {
+                // 解锁
+                input.removeAttribute('data-locked');
+                input.classList.remove('locked-cell');
+                button.textContent = '🔓';
+                delete window.lockedCells[key];
+            } else {
+                // 锁定
+                input.setAttribute('data-locked', 'true');
+                input.classList.add('locked-cell');
+                button.textContent = '🔒';
+                if (!window.lockedCells) window.lockedCells = {};
+                window.lockedCells[key] = true;
+            }
+        };
+        
+        // 检查单元格是否被锁定
+        function isCellLocked(rowIndex, field) {
+            const key = `${rowIndex}_${field}`;
+            return window.lockedCells && window.lockedCells[key] === true;
+        }
+
+        // 重新计算所有行（从第一行开始）
+        window.recalculateAllRows = function() {
+            const tbody = document.getElementById('parent-dilution-tbody');
+            if (!tbody) return;
+            
+            let previousPostMoney = 0;
+            let previousFounderPct = 100;
+            
+            for (let i = 0; i < tbody.children.length; i++) {
+                const row = tbody.children[i];
+                const inputs = row.querySelectorAll('input');
+                
+                // 检查锁定状态
+                const preLocked = isCellLocked(String(i), 'pre-money');
+                const invLocked = isCellLocked(String(i), 'investment');
+                const postLocked = isCellLocked(String(i), 'post-money');
+                const pctLocked = isCellLocked(String(i), 'investor-pct');
+                
+                // 读取当前值
+                let preMoney = parseFloat(inputs[1].value) || 0;
+                let investment = parseFloat(inputs[2].value) || 0;
+                let postMoney = parseFloat(inputs[3].value) || 0;
+                let investorPct = parseFloat(inputs[4].value) || 0;
+                
+                // 步骤1: 填充投前估值（如果未锁定且为空）
+                if (!preLocked) {
+                    if (preMoney === 0 && i > 0 && previousPostMoney > 0) {
+                        // 从上一行继承投后估值作为本行的投前估值
+                        preMoney = previousPostMoney;
+                        inputs[1].value = preMoney;
+                    }
+                }
+                
+                // 步骤2: 重新读取更新后的值
+                preMoney = parseFloat(inputs[1].value) || 0;
+                investment = parseFloat(inputs[2].value) || 0;
+                postMoney = parseFloat(inputs[3].value) || 0;
+                investorPct = parseFloat(inputs[4].value) || 0;
+                
+                // 步骤3: 确保 投前 + 投资额 = 投后
+                // 优先级：先保证投后有正确的值，如果投后被锁定，则调整投前或投资额
+                
+                const calculatedPostMoney = preMoney + investment;
+                
+                if (!postLocked && preMoney > 0 && investment > 0) {
+                    // 投前和投资额都有值，计算投后
+                    postMoney = calculatedPostMoney;
+                    inputs[3].value = postMoney.toFixed(2);
+                } else if (postMoney > 0 && investment > 0 && !preLocked) {
+                    // 投后有值，投资额有值，投前未锁定且为空 → 计算投前
+                    if (preMoney === 0 || Math.abs(preMoney - (postMoney - investment)) > 0.01) {
+                        preMoney = postMoney - investment;
+                        inputs[1].value = preMoney.toFixed(2);
+                    }
+                } else if (preMoney > 0 && postMoney > 0 && !invLocked) {
+                    // 投前和投后都有值，计算投资额
+                    investment = postMoney - preMoney;
+                    inputs[2].value = investment.toFixed(2);
+                }
+                
+                // 步骤4: 使用股权比例计算（如果提供了股权比例）
+                if (investorPct > 0 && !pctLocked) {
+                    if (investment > 0 && !postLocked) {
+                        // 有投资额和股权比例，计算投后
+                        postMoney = investment / (investorPct / 100);
+                        inputs[3].value = postMoney.toFixed(2);
+                        if (!preLocked && preMoney === 0) {
+                            preMoney = postMoney - investment;
+                            inputs[1].value = preMoney.toFixed(2);
+                        }
+                    } else if (postMoney > 0 && !invLocked && investment === 0) {
+                        // 有投后和股权比例，计算投资额
+                        investment = postMoney * (investorPct / 100);
+                        inputs[2].value = investment.toFixed(2);
+                        if (!preLocked && preMoney === 0) {
+                            preMoney = postMoney - investment;
+                            inputs[1].value = preMoney.toFixed(2);
+                        }
+                    }
+                }
+                
+                // 重新读取最终值
+                preMoney = parseFloat(inputs[1].value) || 0;
+                investment = parseFloat(inputs[2].value) || 0;
+                postMoney = parseFloat(inputs[3].value) || 0;
+                
+                // 步骤5: 计算股权比例
+                if (!pctLocked && postMoney > 0 && investment >= 0) {
+                    investorPct = (investment / postMoney) * 100;
+                    inputs[4].value = investorPct.toFixed(2);
+                } else {
+                    investorPct = parseFloat(inputs[4].value) || 0;
+                }
+                
+                // 步骤6: 计算创始人持股（累积稀释）
+                if (postMoney > 0 && investment >= 0) {
+                    const dilutionFactor = (100 - investorPct) / 100;
+                    const founderPct = previousFounderPct * dilutionFactor;
+                    inputs[5].value = founderPct.toFixed(2);
+                    
+                    // 更新下一行需要的值
+                    previousPostMoney = postMoney;
+                    previousFounderPct = founderPct;
+                }
+            }
+        };
+
+        // 计算单行数据（已废弃，现在使用recalculateAllRows）
+        window.calculateParentRow = function(rowIndex, changedField) {
+            // 不再使用
+        };
+
+        // 添加新行
+        window.addParentRow = function() {
+            const tbody = document.getElementById('parent-dilution-tbody');
+            const rows = tbody.querySelectorAll('tr');
+            const lastRow = rows[rows.length - 1];
+            const nextIndex = rows.length;
+            
+            const lastPostMoney = parseFloat(lastRow.querySelector('.post-money').value) || 0;
+            const lastFounderPct = parseFloat(lastRow.querySelector('.founder-pct').value) || 0;
+            
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td style="padding: 8px; border: 1px solid #ddd;"><input type="text" value="B" style="width: 100%; border: none; padding: 4px;"></td>
+                <td style="padding: 4px; border: 1px solid #ddd; position: relative;">
+                    <input type="number" value="${lastPostMoney}" class="pre-money" data-row="${nextIndex}" data-field="pre-money" style="width: 100%; border: none; padding: 4px; background: white;">
+                    <button onclick="toggleSingleCellLock(this)" class="cell-lock-btn" title="锁定/解锁">🔓</button>
+                </td>
+                <td style="padding: 4px; border: 1px solid #ddd; position: relative;">
+                    <input type="number" value="0" class="investment" data-row="${nextIndex}" data-field="investment" style="width: 100%; border: none; padding: 4px; background: white;">
+                    <button onclick="toggleSingleCellLock(this)" class="cell-lock-btn" title="锁定/解锁">🔓</button>
+                </td>
+                <td style="padding: 4px; border: 1px solid #ddd; position: relative;">
+                    <input type="number" value="${lastPostMoney}" class="post-money" data-row="${nextIndex}" data-field="post-money" style="width: 100%; border: none; padding: 4px; background: #fff8dc;">
+                    <button onclick="toggleSingleCellLock(this)" class="cell-lock-btn" title="锁定/解锁">🔓</button>
+                </td>
+                <td style="padding: 4px; border: 1px solid #ddd; position: relative;">
+                    <input type="number" value="0" class="investor-pct" data-row="${nextIndex}" data-field="investor-pct" style="width: 100%; border: none; padding: 4px; background: #fff8dc;">
+                    <button onclick="toggleSingleCellLock(this)" class="cell-lock-btn" title="锁定/解锁">🔓</button>
+                </td>
+                <td style="padding: 8px; border: 1px solid #ddd;">
+                    <input type="number" value="${lastFounderPct}" class="founder-pct" data-row="${nextIndex}" readonly style="width: 100%; border: none; padding: 4px; background: #f0f0f0;">
+                </td>
+            `;
+            tbody.appendChild(newRow);
+            
+            // 重新计算所有行
+            recalculateAllRows();
+        };
+
+        // 从表格分析
+        window.analyzeParentFromTable = async function() {
+            showLoading();
+            
+            try {
+                const rows = document.querySelectorAll('#parent-dilution-tbody tr');
+                const rounds = [];
+                let firstPreMoney = parseFloat(document.querySelector('.pre-money').value) || 0;
+                
+                rows.forEach(row => {
+                    const inputs = row.querySelectorAll('input');
+                    const roundName = inputs[0].value || 'Round';
+                    const amount = parseFloat(inputs[2].value) || 0;
+                    
+                    if (amount > 0) {
+                        rounds.push({
+                            round: roundName,
+                            amount: amount
+                        });
+                    }
+                });
+                
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        parent_dilution: { pre_money: firstPreMoney, rounds: rounds }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayParentResults(data.results.parent_dilution);
+                } else {
+                    alert('分析失败: ' + data.error);
+                }
+            } catch (error) {
+                alert('错误: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        };
+
+        // 初始化lockedCells对象
+        window.lockedCells = window.lockedCells || {};
+        
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', function() {
             console.log('页面加载完成，所有函数已准备好');
+            window.lockedCells = {}; // 确保lockedCells被初始化
+            initParentDilutionTable();
+            
+            // 设置为手动输入模式（默认关闭自动计算）
+            document.getElementById('input_mode').value = 'manual';
+            autoCalculateEnabled = false;
+            changeInputMode();
+            
+            recalculateAllRows(); // 初始计算所有行
         });
     </script>
 </body>

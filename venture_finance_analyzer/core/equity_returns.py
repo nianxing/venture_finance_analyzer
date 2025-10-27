@@ -101,15 +101,33 @@ def simulate_multi_round_equity_dilution(
     # 计算每个参与者的收益
     participant_returns = {}
     for participant, equity in partner_equity.items():
-        return_amount = total_return * equity
-        roi_percentage = (return_amount / total_investment) * 100 if total_investment > 0 else 0
+        # 股权价值 = 退出估值 × 股权比例
+        equity_value = exit_valuation * equity
+        
+        # 确定投资成本（如果是投资者则记录投资额）
+        investment_cost = 0
+        for i, round_info in enumerate(investment_rounds):
+            if f"投资者-{round_info['round']}" == participant:
+                investment_cost = round_info['amount']
+                break
+        
+        # 净收益 = 股权价值 - 投资成本
+        net_return = equity_value - investment_cost
+        
+        # 计算ROI（如果有投资成本）
+        if investment_cost > 0:
+            roi_percentage = (net_return / investment_cost) * 100 if investment_cost > 0 else 0
+        else:
+            # 对于创始人等无初始投资的股东，ROI定义为其股权价值
+            roi_percentage = equity_value
 
         participant_returns[participant] = {
             '最终股权比例': equity * 100,
-            '收益金额': return_amount,
+            '股权价值': equity_value,
+            '收益金额': net_return,
             '投资回报率': roi_percentage,
-            '投资成本': 0,  # 这里可以根据实际情况设置初始投资成本
-            '净收益': return_amount
+            '投资成本': investment_cost,
+            '净收益': net_return
         }
 
     return {
@@ -174,17 +192,31 @@ def generate_equity_returns_table(equity_data: Dict) -> pd.DataFrame:
         })
 
         records.append({
-            '项目': f'{participant} - 收益金额',
-            '数值': data['收益金额'],
+            '项目': f'{participant} - 股权价值',
+            '数值': data['股权价值'],
             '单位': '万元',
-            '说明': f'{participant}从退出中获得的收益'
+            '说明': f'{participant}的股权现值'
         })
 
         records.append({
-            '项目': f'{participant} - 回报率',
+            '项目': f'{participant} - 投资成本',
+            '数值': data['投资成本'],
+            '单位': '万元',
+            '说明': f'{participant}的投资成本'
+        })
+
+        records.append({
+            '项目': f'{participant} - 净收益',
+            '数值': data['净收益'],
+            '单位': '万元',
+            '说明': f'{participant}从退出中获得的净收益'
+        })
+
+        records.append({
+            '项目': f'{participant} - 投资回报率',
             '数值': data['投资回报率'],
-            '单位': '%',
-            '说明': f'{participant}的投资回报率'
+            '单位': '%' if data['投资成本'] > 0 else '万元',
+            '说明': f'{participant}的投资回报率' if data['投资成本'] > 0 else f'{participant}的股权价值'
         })
 
     return pd.DataFrame(records)

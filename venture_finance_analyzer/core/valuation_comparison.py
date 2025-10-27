@@ -45,16 +45,36 @@ def calculate_valuation_comparison(
         if not (0 <= equity_pct <= 1):
             raise ValueError(f"合伙人 {partner} 的股权比例必须在0-1之间")
 
-        partner_return = (post_money - total_investment) * equity_pct
+        # 股权价值 = 投后估值 × 股权比例
+        equity_value = post_money * equity_pct
+        
+        # 对于合伙人（假设没有投资成本，或成本很少），收益=股权价值
+        # 这可以根据实际需求调整
+        partner_return = equity_value
+        return_percentage = (equity_value / post_money) * 100
+        
         partner_returns[partner] = {
             'equity_percentage': equity_pct * 100,
+            'equity_value': equity_value,
             'return_amount': partner_return,
-            'return_percentage': (partner_return / (post_money - total_investment)) * 100 if post_money > total_investment else 0
+            'return_percentage': return_percentage
         }
 
-    # 计算投资方总收益
-    investor_return = post_money - total_investment
+    # 计算投资方整体收益
+    # 如果所有股权都分配给了合伙人，则说明投资者在合伙人列表中
+    # 这里计算的是所有投资者作为一个整体的表现
+    total_equity_allocated = sum(partner_equity_splits.values())
+    investor_equity_pct = 1 - total_equity_allocated if total_equity_allocated < 1 else 0
+    investor_equity_value = post_money * investor_equity_pct
+    investor_return = investor_equity_value - total_investment if investor_equity_pct > 0 else 0
     investor_roi_pct = (investor_return / total_investment) * 100 if total_investment > 0 else 0
+    
+    # 如果所有股权都已分配，计算总体的ROI（假设投资者获得部分股权价值）
+    if total_equity_allocated >= 1:
+        # 在这种情况下，基于投后估值和投资额计算理论ROI
+        investor_equity_value = post_money - sum(data['equity_value'] for data in partner_returns.values())
+        investor_return = post_money - total_investment
+        investor_roi_pct = ((post_money - total_investment) / total_investment) * 100 if total_investment > 0 else 0
 
     return {
         'pre_money_valuation': pre_money,
@@ -64,6 +84,8 @@ def calculate_valuation_comparison(
         'investor_roi_multiple': roi_multiple,
         'investor_roi_percentage': investor_roi_pct,
         'investor_total_return': investor_return,
+        'investor_equity_value': investor_equity_value,
+        'investor_equity_percentage': investor_equity_pct * 100,
         'partner_returns': partner_returns,
         'investment_rounds': investment_rounds
     }
@@ -143,17 +165,17 @@ def generate_valuation_comparison_table(comparison_data: Dict) -> pd.DataFrame:
         })
 
         records.append({
-            '项目': f'{partner} - 收益金额',
-            '数值': data['return_amount'],
+            '项目': f'{partner} - 股权价值',
+            '数值': data['equity_value'],
             '单位': '万元',
-            '说明': f'{partner}从投资中获得的收益'
+            '说明': f'{partner}的股权现值'
         })
 
         records.append({
             '项目': f'{partner} - 收益占比',
             '数值': data['return_percentage'],
             '单位': '%',
-            '说明': f'{partner}在总收益中的占比'
+            '说明': f'{partner}在总价值中的占比'
         })
 
     return pd.DataFrame(records)
