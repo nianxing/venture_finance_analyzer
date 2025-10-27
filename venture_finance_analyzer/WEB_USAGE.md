@@ -1,11 +1,11 @@
-# ZFarm Decision System - Web界面使用指南
+# Venture Finance Analyzer - Web界面使用指南
 
 ## 🚀 快速开始
 
 ### 1. 启动Web服务器
 
 ```bash
-cd zfarm_decision_system
+cd venture_finance_analyzer
 python app.py
 ```
 

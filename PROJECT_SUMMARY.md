@@ -1,8 +1,8 @@
-# ZFarm Decision System - 项目总结
+# Venture Finance Analyzer - 项目总结
 
 ## 🎯 项目概述
 
-**ZFarm决策系统**是一个完整的融资决策分析工具，用于：
+**Venture Finance Analyzer**是一个完整的融资决策分析工具，用于：
 - 分析股权稀释情况
 - 计算DCF估值和投资回报率
 - 通过蒙特卡洛模拟量化投资风险
@@ -87,7 +87,7 @@
 ## 📁 项目结构
 
 ```
-zfarm_decision_system/
+venture_finance_analyzer/
 ├── core/                    # 核心业务逻辑
 │   ├── cap_table_main.py   # 母公司稀释
 │   ├── cap_table_jointventure.py  # JV稀释
@@ -120,13 +120,13 @@ zfarm_decision_system/
 
 ### 命令行模式
 ```bash
-cd zfarm_decision_system
+cd venture_finance_analyzer
 python main.py
 ```
 
 ### Web界面
 ```bash
-cd zfarm_decision_system
+cd venture_finance_analyzer
 python app.py
 # 访问 http://localhost:5000
 ```

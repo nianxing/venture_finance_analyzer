@@ -1,27 +1,27 @@
-# ZFarm Decision System
+# Venture Finance Analyzer
 
 **融资决策分析系统**
 
 一个用于分析股权稀释、DCF估值和风险模拟的决策支持工具。
 
-## ✨ 功能特性
+## 功能特性
 
-### 📊 股权稀释分析
+### 股权稀释分析
 - **母公司稀释**: 模拟多轮融资后的股权稀释情况
 - **JV稀释分析**: 合资企业的多方股权变化模拟
 - 详细的数据表格和可视化图表
 
-### 💰 估值分析
+### 估值分析
 - **DCF模型**: 现金流折现和终值计算
 - **退出估值**: 完整的估值分析
 - **投资回报率(ROI)**: 量化投资回报
 
-### 🎲 风险模拟
+### 风险模拟
 - **蒙特卡洛模拟**: 10,000+次模拟
 - **风险量化**: 均值、中位数、分位数分析
 - **不确定性分析**: 现金流波动和退出估值分布
 
-## 🚀 快速开始
+## 快速开始
 
 ### 环境要求
 - Python 3.8+
@@ -34,7 +34,7 @@ pip install -r requirements.txt
 
 ### 命令行模式
 ```bash
-cd zfarm_decision_system
+cd venture_finance_analyzer
 python main.py
 ```
 
@@ -42,16 +42,16 @@ python main.py
 
 ### Web界面
 ```bash
-cd zfarm_decision_system
+cd venture_finance_analyzer
 python app.py
 ```
 
 然后打开浏览器访问: **http://localhost:5000**
 
-## 📦 项目结构
+## 项目结构
 
 ```
-zfarm_decision_system/
+venture_finance_analyzer/
 ├── core/                      # 核心业务逻辑
 │   ├── cap_table_main.py     # 母公司稀释模拟
 │   ├── cap_table_jointventure.py  # JV稀释模拟
@@ -72,13 +72,13 @@ zfarm_decision_system/
 └── requirements.txt           # 依赖列表
 ```
 
-## 📚 使用文档
+## 使用文档
 
-- [Web界面使用指南](zfarm_decision_system/WEB_USAGE.md) - Web界面详细说明
+- [Web界面使用指南](venture_finance_analyzer/WEB_USAGE.md) - Web界面详细说明
 - [Web可视化总结](WEB_VISUALIZATION_SUMMARY.md) - Web功能总结
 - [改进记录](IMPROVEMENTS.md) - 代码改进历史
 
-## 🎯 使用示例
+## 使用示例
 
 ### 母公司稀释分析
 ```python
@@ -108,21 +108,21 @@ result = analyze_exit(
 print(result)
 ```
 
-## 🛠️ 技术栈
+## 技术栈
 
 - **后端**: Python, Flask, pandas, numpy
 - **前端**: HTML5, CSS3, JavaScript, Chart.js
 - **分析**: DCF模型, 蒙特卡洛模拟
 
-## 📝 许可证
+## 许可证
 
 MIT License
 
-## 🤝 贡献
+## 贡献
 
 欢迎提交 Issue 和 Pull Request！
 
-## 📧 联系方式
+## 联系方式
 
 如有问题或建议，请提交 Issue。
 

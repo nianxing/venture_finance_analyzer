@@ -6,7 +6,7 @@ import sys
 
 def main():
     print("\n" + "="*60)
-    print("🌾 ZFarm Decision System - Web Interface")
+    print("💰 Venture Finance Analyzer - Web Interface")
     print("="*60)
     print("\n正在启动Web服务器...")
     print("\n访问地址: http://localhost:5000")

@@ -1,5 +1,5 @@
 """
-ZFarm Decision System - Web Application
+Venture Finance Analyzer - Web Application
 Flask backend for interactive analysis
 """
 from flask import Flask, render_template, request, jsonify
@@ -8,6 +8,8 @@ from core.cap_table_main import simulate_equity_dilution
 from core.cap_table_jointventure import simulate_jv_equity
 from core.exit_analysis import analyze_exit
 from core.montecarlo_risk import monte_carlo_exit_analysis
+from core.valuation_comparison import calculate_valuation_comparison, generate_valuation_comparison_table
+from core.equity_returns import simulate_multi_round_equity_dilution, generate_equity_returns_table, calculate_partner_contribution_analysis
 import pandas as pd
 import json
 from datetime import datetime
@@ -71,7 +73,41 @@ def analyze():
                     trials=mc_trials, cf_volatility=cf_volatility
                 )
                 results['montecarlo'] = mc_results
-        
+
+        # 5. 估值对比分析
+        if 'valuation_comparison' in data:
+            pre_money = float(data['valuation_comparison']['pre_money'])
+            post_money = float(data['valuation_comparison']['post_money'])
+            investment_rounds = data['valuation_comparison']['investment_rounds']
+            partner_equity_splits = data['valuation_comparison']['partner_equity_splits']
+
+            comparison_result = calculate_valuation_comparison(
+                pre_money, post_money, investment_rounds, partner_equity_splits
+            )
+            comparison_table = generate_valuation_comparison_table(comparison_result)
+
+            results['valuation_comparison'] = {
+                'data': comparison_result,
+                'table': comparison_table.to_dict('records')
+            }
+
+        # 6. 股比和收益分析
+        if 'equity_returns' in data:
+            initial_valuation = float(data['equity_returns']['initial_valuation'])
+            investment_rounds = data['equity_returns']['investment_rounds']
+            initial_partners = data['equity_returns']['initial_partners']
+            new_investors_per_round = data['equity_returns'].get('new_investors_per_round', {})
+
+            equity_result = simulate_multi_round_equity_dilution(
+                initial_valuation, investment_rounds, initial_partners, new_investors_per_round
+            )
+            equity_table = generate_equity_returns_table(equity_result)
+
+            results['equity_returns'] = {
+                'data': equity_result,
+                'table': equity_table.to_dict('records')
+            }
+
         return jsonify({
             'success': True,
             'results': results,
@@ -106,7 +142,7 @@ def export_analysis(analysis_type):
 
 if __name__ == '__main__':
     print("\n" + "="*50)
-    print("ZFarm Decision System - Web Interface")
+    print("Venture Finance Analyzer - Web Interface")
     print("="*50)
     print("\nStarting server...")
     print("Open your browser and visit: http://localhost:5000")

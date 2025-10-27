@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZFarm 决策分析系统</title>
+    <title>Venture Finance Analyzer - 融资决策分析系统</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * {
@@ -132,9 +132,29 @@
             gap: 15px;
             align-items: center;
         }
-        
+
         .round-item input {
             flex: 1;
+        }
+
+        .round-item input[type="number"] {
+            min-width: 120px;
+        }
+
+        .round-item:has(input[type="number"][min="0"][max="1"]) {
+            grid-template-columns: 2fr 1fr;
+        }
+
+        /* 响应式布局 */
+        @media (max-width: 768px) {
+            .round-item {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .round-item input {
+                width: 100%;
+            }
         }
         
         .btn {
@@ -264,7 +284,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🌾 ZFarm 决策分析系统</h1>
+            <h1>💰 Venture Finance Analyzer</h1>
             <p>股权稀释、估值分析与风险模拟</p>
         </div>
         
@@ -272,6 +292,8 @@
             <button class="tab-button active" onclick="switchTab(0)">母公司稀释</button>
             <button class="tab-button" onclick="switchTab(1)">JV稀释</button>
             <button class="tab-button" onclick="switchTab(2)">退出估值</button>
+            <button class="tab-button" onclick="switchTab(3)">投前投后对比</button>
+            <button class="tab-button" onclick="switchTab(4)">股比收益分析</button>
         </div>
         
         <!-- Tab 1: 母公司稀释 -->
@@ -390,7 +412,128 @@
             <button class="btn btn-success" onclick="analyzeExit()">分析</button>
             <div id="exit-results" class="results"></div>
         </div>
-        
+
+        <!-- Tab 4: 投前投后对比 -->
+        <div class="tab-content">
+            <div class="form-section">
+                <h3>投前/投后估值对比分析</h3>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                    <div class="form-group">
+                        <label>投前估值 (万元)</label>
+                        <input type="number" id="pre_money_valuation" value="2000" step="100" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>投后估值 (万元)</label>
+                        <input type="number" id="post_money_valuation" value="5000" step="100" min="1">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>投资轮次</label>
+                    <div id="valuation-rounds">
+                        <div class="round-item">
+                            <input type="text" placeholder="轮次名称" value="Seed">
+                            <input type="number" placeholder="投资额(万元)" value="500" step="100">
+                        </div>
+                        <div class="round-item">
+                            <input type="text" placeholder="轮次名称" value="A轮">
+                            <input type="number" placeholder="投资额(万元)" value="1500" step="100">
+                        </div>
+                        <div class="round-item">
+                            <input type="text" placeholder="轮次名称" value="B轮">
+                            <input type="number" placeholder="投资额(万元)" value="1000" step="100">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="addRound('valuation')">+ 添加轮次</button>
+                </div>
+
+                <div class="form-group">
+                    <label>合伙人股权分配</label>
+                    <div id="partner-equity-splits">
+                        <div class="round-item">
+                            <input type="text" placeholder="合伙人姓名" value="创始人A">
+                            <input type="number" placeholder="股权比例(0-1)" value="0.4" step="0.01" min="0" max="1">
+                        </div>
+                        <div class="round-item">
+                            <input type="text" placeholder="合伙人姓名" value="创始人B">
+                            <input type="number" placeholder="股权比例(0-1)" value="0.3" step="0.01" min="0" max="1">
+                        </div>
+                        <div class="round-item">
+                            <input type="text" placeholder="合伙人姓名" value="早期员工">
+                            <input type="number" placeholder="股权比例(0-1)" value="0.2" step="0.01" min="0" max="1">
+                        </div>
+                        <div class="round-item">
+                            <input type="text" placeholder="合伙人姓名" value="投资人">
+                            <input type="number" placeholder="股权比例(0-1)" value="0.1" step="0.01" min="0" max="1">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="addPartner('partner-equity-splits')">+ 添加合伙人</button>
+                </div>
+            </div>
+            <button class="btn btn-success" onclick="analyzeValuationComparison()">分析</button>
+            <div id="valuation-results" class="results"></div>
+        </div>
+
+        <!-- Tab 5: 股比收益分析 -->
+        <div class="tab-content">
+            <div class="form-section">
+                <h3>多轮次股比和收益分析</h3>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                    <div class="form-group">
+                        <label>初始估值 (万元)</label>
+                        <input type="number" id="initial_valuation" value="1000" step="100" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>退出时估值 (万元)</label>
+                        <input type="number" id="exit_valuation" value="10000" step="100" min="1">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>初始合伙人及其股权比例</label>
+                    <div id="initial-partners">
+                        <div class="round-item">
+                            <input type="text" placeholder="合伙人姓名" value="创始人A">
+                            <input type="number" placeholder="股权比例(0-1)" value="0.5" step="0.01" min="0" max="1">
+                        </div>
+                        <div class="round-item">
+                            <input type="text" placeholder="合伙人姓名" value="创始人B">
+                            <input type="number" placeholder="股权比例(0-1)" value="0.3" step="0.01" min="0" max="1">
+                        </div>
+                        <div class="round-item">
+                            <input type="text" placeholder="合伙人姓名" value="早期投资人">
+                            <input type="number" placeholder="股权比例(0-1)" value="0.2" step="0.01" min="0" max="1">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="addPartner('initial-partners')">+ 添加合伙人</button>
+                </div>
+
+                <div class="form-group">
+                    <label>投资轮次</label>
+                    <div id="equity-rounds">
+                        <div class="round-item">
+                            <input type="text" placeholder="轮次名称" value="A轮">
+                            <input type="number" placeholder="投资额(万元)" value="1000" step="100">
+                            <input type="number" placeholder="新投资者股权比例(0-1)" value="0.15" step="0.01" min="0" max="1" title="新投资者获得的具体股权比例">
+                        </div>
+                        <div class="round-item">
+                            <input type="text" placeholder="轮次名称" value="B轮">
+                            <input type="number" placeholder="投资额(万元)" value="3000" step="100">
+                            <input type="number" placeholder="新投资者股权比例(0-1)" value="0.2" step="0.01" min="0" max="1" title="新投资者获得的具体股权比例">
+                        </div>
+                        <div class="round-item">
+                            <input type="text" placeholder="轮次名称" value="C轮">
+                            <input type="number" placeholder="投资额(万元)" value="5000" step="100">
+                            <input type="number" placeholder="新投资者股权比例(0-1)" value="0.25" step="0.01" min="0" max="1" title="新投资者获得的具体股权比例">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="addEquityRound('equity-rounds')">+ 添加轮次</button>
+                </div>
+            </div>
+            <button class="btn btn-success" onclick="analyzeEquityReturns()">分析</button>
+            <div id="equity-results" class="results"></div>
+        </div>
+
         <div class="loading" id="loading">
             🔄 正在分析中...
         </div>
@@ -421,6 +564,33 @@
                 <button class="btn btn-danger" onclick="this.parentElement.remove()">删除</button>
             `;
             roundsDiv.appendChild(newRound);
+        };
+
+        // 添加合伙人
+        window.addPartner = function(containerId) {
+            const container = document.getElementById(containerId);
+            const newPartner = document.createElement('div');
+            newPartner.className = 'round-item';
+            newPartner.innerHTML = `
+                <input type="text" placeholder="合伙人姓名">
+                <input type="number" placeholder="股权比例(0-1)" value="0" step="0.01" min="0" max="1">
+                <button class="btn btn-danger" onclick="this.parentElement.remove()">删除</button>
+            `;
+            container.appendChild(newPartner);
+        };
+
+        // 添加股比轮次（带股权比例输入）
+        window.addEquityRound = function(containerId) {
+            const container = document.getElementById(containerId);
+            const newRound = document.createElement('div');
+            newRound.className = 'round-item';
+            newRound.innerHTML = `
+                <input type="text" placeholder="轮次名称" style="flex: 1.5;">
+                <input type="number" placeholder="投资额(万元)" value="0" step="100" style="flex: 1;">
+                <input type="number" placeholder="新投资者股权比例(0-1)" value="0" step="0.01" min="0" max="1" style="flex: 1;" title="新投资者获得的具体股权比例">
+                <button class="btn btn-danger" onclick="this.parentElement.remove()">删除</button>
+            `;
+            container.appendChild(newRound);
         };
 
         // 显示加载状态
@@ -734,6 +904,325 @@
             
             resultsDiv.innerHTML = html;
         };
+
+        // 投前投后估值对比分析
+        window.analyzeValuationComparison = async function() {
+            showLoading();
+
+            try {
+                const preMoney = parseFloat(document.getElementById('pre_money_valuation').value);
+                const postMoney = parseFloat(document.getElementById('post_money_valuation').value);
+
+                const rounds = Array.from(document.querySelectorAll('#valuation-rounds .round-item')).map(item => {
+                    const inputs = item.querySelectorAll('input');
+                    return {
+                        round: inputs[0].value || 'Round',
+                        amount: parseFloat(inputs[1].value)
+                    };
+                });
+
+                const partnerSplits = {};
+                Array.from(document.querySelectorAll('#partner-equity-splits .round-item')).forEach(item => {
+                    const inputs = item.querySelectorAll('input');
+                    const name = inputs[0].value;
+                    const equity = parseFloat(inputs[1].value);
+                    if (name && equity > 0) {
+                        partnerSplits[name] = equity;
+                    }
+                });
+
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        valuation_comparison: {
+                            pre_money: preMoney,
+                            post_money: postMoney,
+                            investment_rounds: rounds,
+                            partner_equity_splits: partnerSplits
+                        }
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayValuationComparisonResults(data.results.valuation_comparison);
+                } else {
+                    alert('分析失败: ' + data.error);
+                }
+            } catch (error) {
+                alert('错误: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 显示投前投后对比结果
+        function displayValuationComparisonResults(data) {
+            const resultsDiv = document.getElementById('valuation-results');
+
+            let html = '<div class="result-card"><h4>投前/投后估值对比分析</h4>';
+
+            // 核心指标
+            html += '<div class="stats-grid">';
+            html += `<div class="stat-card">
+                <h5>投前估值</h5>
+                <div class="value">${data.data.pre_money_valuation.toFixed(0)}万</div>
+            </div>`;
+            html += `<div class="stat-card">
+                <h5>投后估值</h5>
+                <div class="value">${data.data.post_money_valuation.toFixed(0)}万</div>
+            </div>`;
+            html += `<div class="stat-card">
+                <h5>估值倍数</h5>
+                <div class="value">${data.data.valuation_multiple.toFixed(2)}倍</div>
+            </div>`;
+            html += `<div class="stat-card">
+                <h5>投资ROI</h5>
+                <div class="value">${data.data.investor_roi_percentage.toFixed(2)}%</div>
+            </div>`;
+            html += '</div>';
+
+            // 详细表格
+            html += '<h5 style="margin-top: 30px; color: #333;">详细分析结果</h5>';
+            html += '<table><thead><tr><th>项目</th><th>数值</th><th>单位</th><th>说明</th></tr></thead><tbody>';
+
+            data.table.forEach(row => {
+                html += `<tr>
+                    <td>${row.项目}</td>
+                    <td>${typeof row.数值 === 'number' ? row.数值.toFixed(2) : row.数值}</td>
+                    <td>${row.单位}</td>
+                    <td>${row.说明}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+
+            // 合伙人收益图表
+            const partners = data.data.partner_returns;
+            if (Object.keys(partners).length > 0) {
+                html += '<div class="chart-container"><canvas id="valuationChart"></canvas></div>';
+
+                resultsDiv.innerHTML = html;
+
+                // 绘制合伙人收益图表
+                setTimeout(() => {
+                    const ctx = document.getElementById('valuationChart').getContext('2d');
+                    const labels = Object.keys(partners);
+                    const returnData = labels.map(p => partners[p].return_amount);
+
+                    new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: '收益分配',
+                                data: returnData,
+                                backgroundColor: [
+                                    '#667eea', '#764ba2', '#f093fb', '#f5576c',
+                                    '#4facfe', '#00f2fe', '#43e97b', '#38f9d7'
+                                ]
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: { display: true, text: '合伙人收益分配' },
+                                legend: { position: 'bottom' }
+                            }
+                        }
+                    });
+                }, 100);
+            } else {
+                resultsDiv.innerHTML = html;
+            }
+        }
+
+        // 股比收益分析
+        window.analyzeEquityReturns = async function() {
+            showLoading();
+
+            try {
+                const initialValuation = parseFloat(document.getElementById('initial_valuation').value);
+                const exitValuation = parseFloat(document.getElementById('exit_valuation').value);
+
+                const initialPartners = {};
+                Array.from(document.querySelectorAll('#initial-partners .round-item')).forEach(item => {
+                    const inputs = item.querySelectorAll('input');
+                    const name = inputs[0].value;
+                    const equity = parseFloat(inputs[1].value);
+                    if (name && equity > 0) {
+                        initialPartners[name] = equity;
+                    }
+                });
+
+                const rounds = Array.from(document.querySelectorAll('#equity-rounds .round-item')).map(item => {
+                    const inputs = item.querySelectorAll('input');
+                    return {
+                        round: inputs[0].value || 'Round',
+                        amount: parseFloat(inputs[1].value)
+                    };
+                });
+
+                const newInvestorsPerRound = {};
+                Array.from(document.querySelectorAll('#equity-rounds .round-item')).forEach(item => {
+                    const inputs = item.querySelectorAll('input');
+                    const roundName = inputs[0].value;
+                    const equityRatio = parseFloat(inputs[2].value);
+                    if (roundName && equityRatio > 0) {
+                        newInvestorsPerRound[roundName] = equityRatio;
+                    }
+                });
+
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        equity_returns: {
+                            initial_valuation: initialValuation,
+                            investment_rounds: rounds,
+                            initial_partners: initialPartners,
+                            new_investors_per_round: newInvestorsPerRound
+                        }
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayEquityReturnsResults(data.results.equity_returns);
+                } else {
+                    alert('分析失败: ' + data.error);
+                }
+            } catch (error) {
+                alert('错误: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 显示股比收益分析结果
+        function displayEquityReturnsResults(data) {
+            const resultsDiv = document.getElementById('equity-results');
+
+            let html = '<div class="result-card"><h4>多轮次股比和收益分析</h4>';
+
+            // 核心指标
+            html += '<div class="stats-grid">';
+            html += `<div class="stat-card">
+                <h5>总投资额</h5>
+                <div class="value">${data.data.total_investment.toFixed(0)}万</div>
+            </div>`;
+            html += `<div class="stat-card">
+                <h5>退出估值</h5>
+                <div class="value">${data.data.exit_valuation.toFixed(0)}万</div>
+            </div>`;
+            html += `<div class="stat-card">
+                <h5>总收益</h5>
+                <div class="value">${data.data.total_return.toFixed(0)}万</div>
+            </div>`;
+            html += `<div class="stat-card">
+                <h5>整体ROI</h5>
+                <div class="value">${data.data.roi_percentage.toFixed(2)}%</div>
+            </div>`;
+            html += '</div>';
+
+            // 详细表格
+            html += '<h5 style="margin-top: 30px; color: #333;">详细收益分析</h5>';
+            html += '<table><thead><tr><th>项目</th><th>数值</th><th>单位</th><th>说明</th></tr></thead><tbody>';
+
+            data.table.forEach(row => {
+                html += `<tr>
+                    <td>${row.项目}</td>
+                    <td>${typeof row.数值 === 'number' ? row.数值.toFixed(2) : row.数值}</td>
+                    <td>${row.单位}</td>
+                    <td>${row.说明}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+
+            // 模拟过程表格
+            if (data.data.simulation_data && data.data.simulation_data.length > 0) {
+                html += '<div class="result-card"><h4>融资过程模拟</h4>';
+                html += '<table><thead><tr><th>轮次</th><th>投资额</th><th>投前估值</th><th>投后估值</th><th>新投资者股权</th>';
+
+                // 获取所有合伙人名称
+                const partners = Object.keys(data.data.final_equity_distribution);
+                partners.forEach(partner => {
+                    html += `<th>${partner}股权</th>`;
+                });
+
+                html += '</tr></thead><tbody>';
+
+                data.data.simulation_data.forEach(row => {
+                    html += `<tr>
+                        <td>${row.轮次}</td>
+                        <td>${row.投资额.toFixed(0)}万</td>
+                        <td>${row.投前估值.toFixed(0)}万</td>
+                        <td>${row.投后估值.toFixed(0)}万</td>
+                        <td>${row.新投资者股权.toFixed(2)}%</td>`;
+
+                    partners.forEach(partner => {
+                        const equityKey = `${partner}_股权`;
+                        const equity = row[equityKey] || 0;
+                        html += `<td>${equity.toFixed(2)}%</td>`;
+                    });
+
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table></div>';
+            }
+
+            // 最终股权分布图表
+            const finalEquity = data.data.final_equity_distribution;
+            if (Object.keys(finalEquity).length > 0) {
+                html += '<div class="chart-container"><canvas id="equityChart"></canvas></div>';
+
+                resultsDiv.innerHTML = html;
+
+                // 绘制最终股权分布图表
+                setTimeout(() => {
+                    const ctx = document.getElementById('equityChart').getContext('2d');
+                    const labels = Object.keys(finalEquity);
+                    const equityData = labels.map(p => finalEquity[p] * 100);
+
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: '最终股权比例',
+                                data: equityData,
+                                backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                                borderColor: '#667eea',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: { display: true, text: '最终股权分布' },
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: 100,
+                                    ticks: { suffix: '%' }
+                                }
+                            }
+                        }
+                    });
+                }, 100);
+            } else {
+                resultsDiv.innerHTML = html;
+            }
+        }
 
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', function() {

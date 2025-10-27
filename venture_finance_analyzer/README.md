@@ -1,9 +1,9 @@
-ZFarm Decision System (Cursor-ready template)
+Venture Finance Analyzer (融资决策分析系统)
 ============================================
 
 Overview
 --------
-This template helps AgInno (ZFarm) to run decision models for:
+This tool helps analyze venture financing decisions for:
 - Parent company equity dilution
 - JV equity simulation (AgInno x partner)
 - DCF and exit analysis

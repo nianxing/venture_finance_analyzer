@@ -1,4 +1,4 @@
-// ZFarm Decision System - Frontend Logic
+// Venture Finance Analyzer - Frontend Logic
 
 // Tab切换
 function switchTab(index) {
