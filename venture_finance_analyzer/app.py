@@ -28,19 +28,46 @@ def index():
 def analyze():
     """分析API"""
     try:
+        print("\n" + "="*50)
+        print("收到API请求")
+        print("="*50)
         data = request.json
+        print(f"请求数据: {data}")
         
         results = {}
         
         # 1. 母公司稀释分析
         if 'parent_dilution' in data:
-            parent_pre = float(data['parent_dilution']['pre_money'])
-            rounds = data['parent_dilution']['rounds']
-            df = simulate_equity_dilution(parent_pre, rounds)
+            print("处理母公司稀释分析...")
+            parent_data = data['parent_dilution']
+            print(f"parent_data: {parent_data}")
+            
+            # 支持新格式：rounds_data（包含完整轮次信息）
+            if 'rounds_data' in parent_data:
+                print("使用新格式 rounds_data")
+                rounds_data = parent_data['rounds_data']
+                initial_pre_money = parent_data.get('pre_money')
+                print(f"rounds_data: {rounds_data}")
+                print(f"initial_pre_money: {initial_pre_money}")
+                df = simulate_equity_dilution(
+                    initial_pre_money=initial_pre_money,
+                    rounds_data=rounds_data
+                )
+                print(f"计算结果 DataFrame:\n{df}")
+            # 兼容旧格式：pre_money + rounds
+            else:
+                parent_pre = float(parent_data.get('pre_money', 0))
+                rounds = parent_data.get('rounds', [])
+                df = simulate_equity_dilution(
+                    initial_pre_money=parent_pre,
+                    investments=rounds
+                )
+            
             results['parent_dilution'] = {
                 'data': df.to_dict('records'),
-                'final_dilution': float(df['founders_pct'].iloc[-1]) * 100 if not df.empty else 100
+                'final_dilution': float(df['founders_pct'].iloc[-1]) if not df.empty else 100
             }
+            print(f"返回结果: {results['parent_dilution']}")
         
         # 2. JV稀释分析
         if 'jv_dilution' in data:
@@ -108,13 +135,20 @@ def analyze():
                 'table': equity_table.to_dict('records')
             }
 
-        return jsonify({
+        response_data = {
             'success': True,
             'results': results,
             'timestamp': datetime.now().isoformat()
-        })
+        }
+        print(f"返回响应: {response_data}")
+        print("="*50 + "\n")
+        return jsonify(response_data)
     
     except Exception as e:
+        import traceback
+        print(f"\n错误: {str(e)}")
+        print(f"错误详情:\n{traceback.format_exc()}")
+        print("="*50 + "\n")
         return jsonify({
             'success': False,
             'error': str(e)

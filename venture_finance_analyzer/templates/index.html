@@ -46,40 +46,17 @@
             font-size: 1.1em;
         }
         
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #eee;
+        /* 移除tabs样式，改为section分隔 */
+        .section-divider {
+            margin: 50px 0 30px 0;
+            border-top: 3px solid #667eea;
+            padding-top: 30px;
         }
         
-        .tab-button {
-            padding: 15px 30px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            color: #666;
-            transition: all 0.3s;
-            border-bottom: 3px solid transparent;
-        }
-        
-        .tab-button:hover {
-            color: #667eea;
-        }
-        
-        .tab-button.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
+        .section-divider:first-of-type {
+            margin-top: 0;
+            border-top: none;
+            padding-top: 0;
         }
         
         .form-section {
@@ -341,32 +318,16 @@
             <p>股权稀释、估值分析与风险模拟</p>
         </div>
         
-        <div class="tabs">
-            <button class="tab-button active" onclick="switchTab(0)">母公司稀释</button>
-            <button class="tab-button" onclick="switchTab(1)">JV稀释</button>
-            <button class="tab-button" onclick="switchTab(2)">退出估值</button>
-            <button class="tab-button" onclick="switchTab(3)">投前投后对比</button>
-            <button class="tab-button" onclick="switchTab(4)">股比收益分析</button>
-        </div>
-        
-        <!-- Tab 1: 母公司稀释 -->
-        <div class="tab-content active">
+        <!-- 股权稀释分析 -->
+        <div class="section-divider">
             <div class="form-section">
-                <h3>母公司股权稀释分析 - 实时计算表格</h3>
+                <h2 style="color: #667eea; margin-bottom: 10px;">📊 股权稀释分析</h2>
+                <h3 style="margin-top: 20px;">母公司股权稀释分析</h3>
                 <p style="color: #666; margin-bottom: 20px;">
-                    修改任何单元格，其他值将自动计算。可以输入投前估值、投资额、投后估值或股权比例中的任何值。
+                    在表格中输入数据，点击"后端计算并更新表格"按钮，后端Python算法会自动计算并更新表格中的所有值。支持反向计算，可以输入投前/投后/投资额/股权比例中的任意值。
                 </p>
                 
                 <div style="margin-bottom: 15px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                    <div>
-                        <label style="font-weight: 600; margin-right: 10px;">计算模式：</label>
-                        <select id="parent_calc_mode" onchange="changeCalcMode()" style="padding: 8px; border-radius: 5px; border: 2px solid #667eea;">
-                            <option value="normal">标准模式（输入投前+投资额）</option>
-                            <option value="post">输入投后+投资额</option>
-                            <option value="equity">输入投资额+股权比例</option>
-                            <option value="flexible">灵活模式（任意输入）</option>
-                        </select>
-                </div>
                     <div>
                         <label style="font-weight: 600; margin-right: 10px;">快速模板：</label>
                         <select id="template_select" onchange="loadTemplate()" style="padding: 8px; border-radius: 5px; border: 2px solid #28a745;">
@@ -378,15 +339,8 @@
                             <option value="big_rounds">大额融资场景</option>
                             <option value="custom">自定义（清空表格）</option>
                         </select>
-                        </div>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <label style="font-weight: 600;">输入模式：</label>
-                        <select id="input_mode" onchange="changeInputMode()" style="padding: 8px; border-radius: 5px; border: 2px solid #667eea;">
-                            <option value="manual">手动输入模式（自由设置所有值）</option>
-                            <option value="auto">自动计算模式（输入后自动计算）</option>
-                        </select>
-                        </div>
                     </div>
+                </div>
                 
                 <div style="overflow-x: auto;">
                     <table id="parent-dilution-table" style="width: 100%; border-collapse: collapse;">
@@ -468,7 +422,7 @@
                 
                 <div style="margin-top: 15px;">
                     <button class="btn btn-primary" onclick="addParentRow()">+ 添加轮次</button>
-                    <button class="btn btn-success" onclick="recalculateAllRows()" style="margin-left: 10px;">🔄 重新计算</button>
+                    <button class="btn btn-info" onclick="analyzeParentFromTable()" style="margin-left: 10px; background: #17a2b8; color: white;">🐍 后端计算并更新表格</button>
                     <button class="btn" onclick="fillFromPrevousRow()" style="margin-left: 10px; background: #f0f0f0; color: #333;">📋 从上一行填充</button>
             </div>
                 
@@ -476,8 +430,9 @@
                     <strong>💡 使用说明：</strong>
                     <ul style="margin: 10px 0; padding-left: 20px;">
                         <li><strong>单元格锁定</strong>：每个单元格右上角有个🔓图标，点击可锁定该单元格（变🔒和红色背景）</li>
-                        <li><strong>锁定状态</strong>：红色背景=已锁定，不会被计算；黄色背景=自动计算字段；白色=手动输入</li>
-                        <li>点击<strong>"重新计算"</strong>按钮统一计算所有<strong>未锁定</strong>的单元格</li>
+                        <li><strong>锁定状态</strong>：红色背景=已锁定，不会被计算；白色=可编辑</li>
+                        <li>点击<strong>"后端计算并更新表格"</strong>按钮使用Python后端算法进行计算，计算结果会自动更新到表格中</li>
+                        <li>支持反向计算：可以输入投前/投后/投资额/股权比例中的任意值，后端会自动计算其他值</li>
                         <li>点击<strong>"从上一行填充"</strong>可批量填充投前估值</li>
                         <li>创始人持股自动按累积稀释计算：上一轮后持股 × (1 - 本轮新投资者股权%)</li>
                     </ul>
@@ -486,10 +441,10 @@
             <div id="parent-results" class="results"></div>
         </div>
         
-        <!-- Tab 2: JV稀释 -->
-        <div class="tab-content">
+        <!-- 合资企业股权稀释分析 -->
+        <div class="section-divider">
             <div class="form-section">
-                <h3>合资企业股权稀释分析</h3>
+                <h3 style="margin-top: 0;">合资企业股权稀释分析</h3>
                 <div class="form-group">
                     <label>初始投资 (万元)</label>
                     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
@@ -530,10 +485,11 @@
             <div id="jv-results" class="results"></div>
         </div>
         
-        <!-- Tab 3: 退出估值 -->
-        <div class="tab-content">
+        <!-- 退出估值与风险分析 -->
+        <div class="section-divider">
             <div class="form-section">
-                <h3>退出估值与风险分析</h3>
+                <h2 style="color: #667eea; margin-bottom: 10px;">💰 退出估值与风险分析</h2>
+                <h3 style="margin-top: 20px;">退出估值与风险分析</h3>
                 <div class="form-group">
                     <label>未来现金流 (万元, 用逗号分隔)</label>
                     <input type="text" id="cash_flows" value="200,400,800,1200,1500">
@@ -576,10 +532,11 @@
             <div id="exit-results" class="results"></div>
         </div>
 
-        <!-- Tab 4: 投前投后对比 -->
-        <div class="tab-content">
+        <!-- 投前/投后估值对比分析 -->
+        <div class="section-divider">
             <div class="form-section">
-                <h3>投前/投后估值对比分析</h3>
+                <h2 style="color: #667eea; margin-bottom: 10px;">📈 估值对比分析</h2>
+                <h3 style="margin-top: 20px;">投前/投后估值对比分析</h3>
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
                     <div class="form-group">
                         <label>投前估值 (万元)</label>
@@ -637,10 +594,11 @@
             <div id="valuation-results" class="results"></div>
         </div>
 
-        <!-- Tab 5: 股比收益分析 -->
-        <div class="tab-content">
+        <!-- 多轮次股比和收益分析 -->
+        <div class="section-divider">
             <div class="form-section">
-                <h3>多轮次股比和收益分析</h3>
+                <h2 style="color: #667eea; margin-bottom: 10px;">💎 股比收益分析</h2>
+                <h3 style="margin-top: 20px;">多轮次股比和收益分析</h3>
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
                     <div class="form-group">
                         <label>初始估值 (万元)</label>
@@ -703,19 +661,7 @@
     </div>
     
     <script>
-        // 确保函数在全局作用域
-        window.switchTab = function(index) {
-            const tabs = document.querySelectorAll('.tab-content');
-            const buttons = document.querySelectorAll('.tab-button');
-            
-            tabs.forEach((tab, i) => {
-                tab.classList.toggle('active', i === index);
-            });
-            
-            buttons.forEach((btn, i) => {
-                btn.classList.toggle('active', i === index);
-            });
-        };
+        // Tab切换功能已移除，所有内容现在在一页显示
 
         window.addRound = function(type) {
             const roundsDiv = document.getElementById(type + '-rounds');
@@ -996,66 +942,119 @@
             return analyzeParentFromTable();
         }
 
-        // 显示母公司结果
+        // 显示母公司结果并更新表格
         function displayParentResults(data) {
-            const resultsDiv = document.getElementById('parent-results');
+            console.log('displayParentResults 被调用，数据:', data);
             
-            let html = '<div class="result-card"><h4>分析结果</h4>';
-            html += `<div class="stats-grid">
-                <div class="stat-card">
-                    <h5>最终创始人持股</h5>
-                    <div class="value">${data.final_dilution.toFixed(2)}%</div>
-                </div>
-            </div>`;
-            
-            // 表格
-            html += '<table><thead><tr><th>轮次</th><th>投前估值</th><th>投资额</th><th>投后估值</th><th>创始人持股</th><th>新投资者持股</th></tr></thead><tbody>';
-            
-            data.data.forEach(row => {
-                html += `<tr>
-                    <td>${row.round}</td>
-                    <td>${row.pre_money.toFixed(0)}万</td>
-                    <td>${row.investment.toFixed(0)}万</td>
-                    <td>${row.post_money.toFixed(0)}万</td>
-                    <td>${(row.founders_pct * 100).toFixed(2)}%</td>
-                    <td>${(row.new_investor_pct * 100).toFixed(2)}%</td>
-                </tr>`;
-            });
-            
-            html += '</tbody></table></div>';
-            
-            // 图表
-            html += '<div class="chart-container"><canvas id="parentChart"></canvas></div>';
-            
-            resultsDiv.innerHTML = html;
-            
-            // 绘制图表
-            setTimeout(() => {
-                const ctx = document.getElementById('parentChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: data.data.map(r => r.round),
-                        datasets: [{
-                            label: '创始人持股比例',
-                            data: data.data.map(r => r.founders_pct * 100),
-                            borderColor: '#667eea',
-                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                            tension: 0.4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            title: { display: true, text: '股权稀释趋势' }
-                        },
-                        scales: {
-                            y: { beginAtZero: true, max: 100, ticks: { suffix: '%' } }
+            try {
+                // 检查数据格式
+                if (!data || !data.data || !Array.isArray(data.data)) {
+                    console.error('数据格式错误:', data);
+                    alert('错误：返回的数据格式不正确');
+                    return;
+                }
+                
+                // 更新表格数据
+                const tbody = document.getElementById('parent-dilution-tbody');
+                if (tbody) {
+                    data.data.forEach((row, index) => {
+                        const tableRow = tbody.children[index];
+                        if (tableRow) {
+                            const inputs = tableRow.querySelectorAll('input');
+                            // 更新表格值（跳过轮次名称和创始人持股，它们可能是只读的）
+                            if (inputs[1]) inputs[1].value = (row.pre_money || 0).toFixed(2);
+                            if (inputs[2]) inputs[2].value = (row.investment || 0).toFixed(2);
+                            if (inputs[3]) inputs[3].value = (row.post_money || 0).toFixed(2);
+                            if (inputs[4]) inputs[4].value = (row.new_investor_pct || 0).toFixed(2);
+                            if (inputs[5]) inputs[5].value = (typeof row.founders_pct === 'number' ? row.founders_pct : (row.founders_pct * 100)).toFixed(2);
                         }
-                    }
-                });
-            }, 100);
+                    });
+                    console.log('表格数据已更新');
+                }
+                
+                // 显示结果摘要
+                const resultsDiv = document.getElementById('parent-results');
+                if (resultsDiv) {
+                    let html = '<div class="result-card"><h4>分析结果</h4>';
+                    html += `<div class="stats-grid">
+                        <div class="stat-card">
+                            <h5>最终创始人持股</h5>
+                            <div class="value">${(data.final_dilution || 0).toFixed(2)}%</div>
+                        </div>
+                    </div>`;
+                    
+                    // 表格
+                    html += '<table><thead><tr><th>轮次</th><th>投前估值</th><th>投资额</th><th>投后估值</th><th>创始人持股</th><th>新投资者持股</th></tr></thead><tbody>';
+                    
+                    data.data.forEach(row => {
+                        // founders_pct 在后端已经是百分比格式了
+                        const foundersPct = typeof row.founders_pct === 'number' ? row.founders_pct : (row.founders_pct * 100);
+                        html += `<tr>
+                            <td>${row.round || 'N/A'}</td>
+                            <td>${(row.pre_money || 0).toFixed(0)}万</td>
+                            <td>${(row.investment || 0).toFixed(0)}万</td>
+                            <td>${(row.post_money || 0).toFixed(0)}万</td>
+                            <td>${foundersPct.toFixed(2)}%</td>
+                            <td>${(row.new_investor_pct || 0).toFixed(2)}%</td>
+                        </tr>`;
+                    });
+                    
+                    html += '</tbody></table></div>';
+                    
+                    // 图表
+                    html += '<div class="chart-container"><canvas id="parentChart"></canvas></div>';
+                    
+                    resultsDiv.innerHTML = html;
+                    console.log('结果已显示到页面');
+                    
+                    // 绘制图表
+                    setTimeout(() => {
+                        try {
+                            const ctx = document.getElementById('parentChart');
+                            if (!ctx) {
+                                console.error('找不到图表canvas元素');
+                                return;
+                            }
+                            
+                            // founders_pct 在后端已经是百分比格式，不需要再乘以100
+                            const chartData = data.data.map(r => {
+                                // 确保founders_pct是数字，如果已经是百分比就直接使用
+                                return typeof r.founders_pct === 'number' ? r.founders_pct : (r.founders_pct * 100);
+                            });
+                            
+                            new Chart(ctx.getContext('2d'), {
+                                type: 'line',
+                                data: {
+                                    labels: data.data.map(r => r.round || 'N/A'),
+                                    datasets: [{
+                                        label: '创始人持股比例',
+                                        data: chartData,
+                                        borderColor: '#667eea',
+                                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                                        tension: 0.4
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        title: { display: true, text: '股权稀释趋势' }
+                                    },
+                                    scales: {
+                                        y: { beginAtZero: true, max: 100, ticks: { suffix: '%' } }
+                                    }
+                                }
+                            });
+                            console.log('图表已绘制');
+                        } catch (chartError) {
+                            console.error('绘制图表时出错:', chartError);
+                        }
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('displayParentResults 出错:', error);
+                alert('显示结果时出错: ' + error.message);
+            }
         };
 
         // JV稀释分析
@@ -1676,8 +1675,13 @@
 
         // 重新计算所有行（从第一行开始）
         window.recalculateAllRows = function() {
+            console.log('开始重新计算...');
             const tbody = document.getElementById('parent-dilution-tbody');
-            if (!tbody) return;
+            if (!tbody) {
+                console.error('找不到 parent-dilution-tbody');
+                alert('错误：找不到表格元素');
+                return;
+            }
             
             let previousPostMoney = 0;
             let previousFounderPct = 100;
@@ -1779,6 +1783,7 @@
                     previousFounderPct = founderPct;
                 }
             }
+            console.log('重新计算完成');
         };
 
         // 计算单行数据（已废弃，现在使用recalculateAllRows）
@@ -1825,44 +1830,116 @@
             recalculateAllRows();
         };
 
-        // 从表格分析
+        // 从表格分析（改进版：发送完整数据包括锁定状态）
         window.analyzeParentFromTable = async function() {
-            showLoading();
-            
+            console.log('开始后端分析...');
             try {
+                showLoading();
                 const rows = document.querySelectorAll('#parent-dilution-tbody tr');
-                const rounds = [];
-                let firstPreMoney = parseFloat(document.querySelector('.pre-money').value) || 0;
+                const rounds_data = [];
+                let firstPreMoney = null;
                 
-                rows.forEach(row => {
+                rows.forEach((row, index) => {
                     const inputs = row.querySelectorAll('input');
-                    const roundName = inputs[0].value || 'Round';
-                    const amount = parseFloat(inputs[2].value) || 0;
-                    
-                    if (amount > 0) {
-                        rounds.push({
-                            round: roundName,
-                            amount: amount
-                        });
+                    if (inputs.length < 5) {
+                        console.warn(`第${index}行输入字段不足，跳过`);
+                        return;
                     }
+                    
+                    const roundName = inputs[0].value || `Round_${index + 1}`;
+                    
+                    // 读取所有字段的值（注意：空字符串parseFloat会返回NaN，需要处理）
+                    const preMoney = inputs[1].value && inputs[1].value.trim() !== '' ? parseFloat(inputs[1].value) : null;
+                    const investment = inputs[2].value && inputs[2].value.trim() !== '' ? parseFloat(inputs[2].value) : null;
+                    const postMoney = inputs[3].value && inputs[3].value.trim() !== '' ? parseFloat(inputs[3].value) : null;
+                    const investorPct = inputs[4].value && inputs[4].value.trim() !== '' ? parseFloat(inputs[4].value) : null;
+                    
+                    // 读取锁定状态
+                    const locked = {
+                        'pre_money': isCellLocked(String(index), 'pre-money'),
+                        'post_money': isCellLocked(String(index), 'post-money'),
+                        'investment': isCellLocked(String(index), 'investment'),
+                        'investor_pct': isCellLocked(String(index), 'investor-pct')
+                    };
+                    
+                    // 构建轮次数据
+                    const roundData = {
+                        'round': roundName
+                    };
+                    
+                    // 只添加非空值
+                    if (preMoney !== null) roundData['pre_money'] = preMoney;
+                    if (postMoney !== null) roundData['post_money'] = postMoney;
+                    if (investment !== null) roundData['investment'] = investment;
+                    if (investorPct !== null) roundData['investor_pct'] = investorPct;
+                    
+                    // 添加锁定状态（如果有锁定的字段）
+                    const hasLocked = Object.values(locked).some(v => v);
+                    if (hasLocked) {
+                        roundData['locked'] = locked;
+                    }
+                    
+                    // 保存第一轮的投前估值
+                    if (index === 0 && preMoney !== null) {
+                        firstPreMoney = preMoney;
+                    }
+                    
+                    rounds_data.push(roundData);
                 });
+                
+                // 检查是否有有效数据
+                if (rounds_data.length === 0) {
+                    alert('错误：没有有效的轮次数据，请至少输入一轮数据');
+                    hideLoading();
+                    return;
+                }
+                
+                // 构建请求数据（使用新格式）
+                const requestData = {
+                    parent_dilution: {
+                        rounds_data: rounds_data
+                    }
+                };
+                
+                // 如果第一轮有投前估值，也添加到请求中
+                if (firstPreMoney !== null) {
+                    requestData.parent_dilution.pre_money = firstPreMoney;
+                }
+                
+                console.log('发送请求数据:', JSON.stringify(requestData, null, 2));
+                console.log('轮次数据数量:', rounds_data.length);
+                console.log('轮次数据详情:', rounds_data);
                 
                 const response = await fetch('/api/analyze', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        parent_dilution: { pre_money: firstPreMoney, rounds: rounds }
-                    })
+                    body: JSON.stringify(requestData)
                 });
                 
+                // 检查响应状态
+                if (!response.ok) {
+                    throw new Error(`HTTP错误! 状态: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('收到后端响应:', data);
+                console.log('响应数据结构:', JSON.stringify(data, null, 2));
                 
                 if (data.success) {
-                    displayParentResults(data.results.parent_dilution);
+                    if (data.results && data.results.parent_dilution) {
+                        console.log('准备显示结果，数据:', data.results.parent_dilution);
+                        displayParentResults(data.results.parent_dilution);
+                    } else {
+                        alert('分析成功，但没有返回结果数据');
+                        console.error('响应数据:', data);
+                        console.error('data.results:', data.results);
+                    }
                 } else {
-                    alert('分析失败: ' + data.error);
+                    alert('分析失败: ' + (data.error || '未知错误'));
+                    console.error('分析失败:', data);
                 }
             } catch (error) {
+                console.error('分析出错:', error);
                 alert('错误: ' + error.message);
             } finally {
                 hideLoading();
@@ -1877,13 +1954,6 @@
             console.log('页面加载完成，所有函数已准备好');
             window.lockedCells = {}; // 确保lockedCells被初始化
             initParentDilutionTable();
-            
-            // 设置为手动输入模式（默认关闭自动计算）
-            document.getElementById('input_mode').value = 'manual';
-            autoCalculateEnabled = false;
-            changeInputMode();
-            
-            recalculateAllRows(); // 初始计算所有行
         });
     </script>
 </body>
